@@ -266,8 +266,12 @@ async function loadSettings(){
   $('#webhookState').textContent=settings.slackWebhook?'✅ A Slack webhook is saved.':'No webhook saved yet.';
   $('#accountList').innerHTML=(settings.accounts||[]).map(a=>
     `<div class="acct"><span><span class="dot ${a.connected?'':'pending'}"></span>${esc(a.email)}</span>
-     <span class="muted">${a.connected?'Connected · synced daily':'Awaiting one-time sign-in'}</span></div>`).join('')
+     <span style="display:flex;gap:8px;align-items:center">
+       <span class="muted">${a.connected?'Connected · synced daily':'Awaiting one-time sign-in'}</span>
+       ${a.connected?`<button class="btn btn-ghost" data-syncacct="${esc(a.email)}" style="padding:6px 11px">↻ Sync</button>`:''}
+     </span></div>`).join('')
     ||'<div class="muted">No accounts yet.</div>';
+  document.querySelectorAll('[data-syncacct]').forEach(b=>b.onclick=()=>requestSync(b.dataset.syncacct));
 }
 
 async function saveSettings(patch){
@@ -306,32 +310,32 @@ async function loadData(){
     render();
   }catch(_){ $('#headline').textContent='No sync yet — click ↻ Sync now.'; }
 }
-let lastSync = null;
-$('#syncBtn').onclick=async()=>{
-  const btn=$('#syncBtn'); btn.disabled=true; btn.textContent='↻ Syncing…';
-  toast('Pulling your inbox now — this takes a few seconds.');
-  try{
-    const r=await fetch('/api/sync-now',{method:'POST'});
-    const j=await r.json();
-    if(!r.ok||j.ok===false){ toast('Sync could not start: '+(j.error||('status '+j.status))); }
-    else{
-      // wait for fresh data to land
-      const before = data && data.syncedAt ? data.syncedAt : null;
-      let tries=0;
-      const iv=setInterval(async()=>{
-        tries++;
-        await loadData();
-        if((data && data.syncedAt && data.syncedAt!==before) || tries>=8){
-          clearInterval(iv);
-          if(tries<8) toast('Synced ✅');
-          else toast('Sync is still running — refresh in a moment.');
-        }
-      },2500);
+async function syncRequest(account){
+  const r=await fetch('/api/sync-now',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account:account||null})});
+  return {ok:r.ok, body:await r.json().catch(()=>({}))};
+}
+async function requestLiveRefresh(before){
+  let tries=0;
+  const iv=setInterval(async()=>{
+    tries++;
+    await loadData();
+    if((data && data.syncedAt && data.syncedAt!==before) || tries>=10){
+      clearInterval(iv);
+      toast(tries<10?'Synced ✅':'Sync queued — data updates shortly.');
     }
-  }catch(e){ toast('Could not reach the sync service'); }
-  setTimeout(()=>{ btn.disabled=false; btn.textContent='↻ Sync now'; }, 20000);
-  btn.disabled=false; btn.textContent='↻ Sync now';
-};
+  },2500);
+}
+async function requestSync(account){
+  toast(account? `Syncing ${account}…` : 'Pulling your inbox now…');
+  const before = data && data.syncedAt ? data.syncedAt : null;
+  try{
+    const r=await syncRequest(account);
+    if(!r.ok || r.body.ok===false) toast('Sync could not start: '+(r.body.error||('status '+r.body.status)));
+    else requestLiveRefresh(before);
+  }catch(_){ toast('Could not reach the sync service'); }
+}
+let lastSync = null;
+$('#syncBtn').onclick=()=>requestSync(null);
 loadSettings(); loadData();
 </script>
 </body>
