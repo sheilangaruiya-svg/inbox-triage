@@ -11,5 +11,18 @@
     }
   ],
   "slackWebhook": "",
-  "schedule": null
+  "schedule": {
+    "time": "07:00",
+    "days": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "timezone": "America/New_York",
+    "applied": true
+  }
 }

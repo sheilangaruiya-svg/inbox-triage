@@ -34,6 +34,21 @@ function pickDataDir() {
   return path.join(os.tmpdir(), 'inbox-triage');
 }
 const DATA = pickDataDir();
+// Seed the persistent store from files shipped with the app when they are
+// newer (a fresh publish brings a fresh snapshot of live-inbox + settings).
+(function seedFromShipped() {
+  for (const name of ['live-inbox.json', 'settings.json']) {
+    const shipped = path.join(__dirname, 'data', name);
+    const live = path.join(DATA, name);
+    try {
+      if (!fs.existsSync(shipped)) continue;
+      if (fs.existsSync(live) && fs.statSync(live).mtimeMs >= fs.statSync(shipped).mtimeMs) continue;
+      fs.mkdirSync(DATA, { recursive: true });
+      fs.copyFileSync(shipped, live);
+    } catch (e) { console.error('seed', name, e.message); }
+  }
+})();
+
 const SAMPLE_PATH = path.join(__dirname, 'data', 'sample-inbox.json');
 const triage = require('./lib/triage.js');
 const https = require('https');
