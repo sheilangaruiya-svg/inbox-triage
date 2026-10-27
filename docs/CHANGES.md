@@ -14,3 +14,7 @@
 - Approval log persists via DATA_DIR (survives restarts on the hosted app).
 - Triage rules tuned: auto-generated mail (meeting notes bots, no-reply notifications) can no longer land in Needs Action.
 - "Load demo inbox" kept as fallback when no live sync exists yet.
+
+## v2.1 — 2026-10-27 (branding + daily automation)
+- Hermessi logo (winged-H SVG mark) in the header + favicon.
+- Daily 7:00 AM ET automated sync: Gmail pull -> triage -> live app refresh -> morning summary.

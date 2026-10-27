@@ -3,3 +3,5 @@ node_modules/
 data/sent-history.json
 .DS_Storedata/live-inbox.json
 data/raw-inbox.json
+data/live-inbox.json
+data/raw-inbox.json
