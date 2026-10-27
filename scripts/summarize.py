@@ -139,24 +139,25 @@ def fmt_date():
 
 
 def build_text(emails, summary):
-    """The delivered message: ONLY what needs her action, one tight line each."""
+    """The delivered message: ONLY what needs her action, CEO-glanceable."""
     actions = [e for e in emails if e['bucket'] == 'NEEDS ACTION']
     noise = [e for e in emails if e['bucket'] == 'NOISE']
     fyi_n = sum(1 for e in emails if e['bucket'] == 'FYI')
 
     if not actions:
-        return (f'\U00002600\ufe0f Hermessi \u2014 {fmt_date()}\n'
-                f'No emails need your action today. All clear \U0001F60C')
+        return (f'\U00002600\ufe0f *Hermesi inbox* \u2014 {fmt_date()}\n'
+                f'Nothing needs your action today. All clear \U0001F60C')
 
-    lines = [f'\U00002600\ufe0f Hermessi \u2014 {fmt_date()}',
-             f'{len(actions)} email{"s" if len(actions)!=1 else ""} need{"s" if len(actions)==1 else ""} your action\n']
-    for i, e in enumerate(actions, 1):
-        lines.append(f'{i}. {e["subject"]}')
-        lines.append(f'   {e["context"]}')
-        lines.append(f'   \u2192 {e["nextStep"]} \u00b7 {e["deadline"]}')
-        lines.append(f'   Open: {e["link"]}')
+    lines = [f'\U00002600\ufe0f *Hermesi inbox* \u2014 {fmt_date()}',
+             f'*{len(actions)} email{"s" if len(actions)!=1 else ""} need your action*\n']
+    for e in actions:
+        lines.append(f'\u2022 *{e["subject"]}* \u2014 {e["context"]}')
+        lines.append(f'  \u2192 {e["nextStep"]}')
+        d = e["deadline"]
+        lines.append(f'  \u23F0 Due: {d}' if d != 'No deadline stated' else '  \u23F0 Due: not stated')
+        lines.append(f'  \U0001F517 {e["link"]}')
         lines.append('')
-    lines.append(f'(FYI {fyi_n} \u00b7 noise {len(noise)} \u2014 in the app, no action needed)')
+    lines.append(f'_FYI {fyi_n} \u00b7 noise {len(noise)} \u2014 in the app, no action needed_')
     return '\n'.join(lines)
 
 
