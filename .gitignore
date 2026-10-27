@@ -1,4 +1,5 @@
 node_modules/
 .env
 data/sent-history.json
-.DS_Store
+.DS_Storedata/live-inbox.json
+data/raw-inbox.json

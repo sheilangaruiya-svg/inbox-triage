@@ -24,9 +24,17 @@ npm.cmd test
 - `public/index.html` is the whole UI — morning summary card, grouped cards, dark mode.
 - `data/sample-inbox.json` is a demo inbox so the tool works out of the box; paste your own JSON for a real test.
 
-## Extending it (course-ready next steps)
+## Gmail connection (v2)
 
-1. Connect to a real inbox (Gmail API or an email-export drag-and-drop).
+The hosted app loads your real hermessi inbox. Sync with:
+
+```powershell
+python scripts/fetch-inbox.py   # or let the daily job do it
+```
+
+## Extending it (next steps)
+
+1. Draft replies from the tool (Gmail API).
 2. Let the user mark triage decisions as "wrong" and feed them back into the rules.
 3. Email the summary to yourself each morning (a cron job / scheduled task).
 

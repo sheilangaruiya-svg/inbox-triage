@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
+const DATA = process.env.DATA_DIR || path.join(__dirname, 'data');
 const SAMPLE_PATH = path.join(__dirname, 'data', 'sample-inbox.json');
 const triage = require('./lib/triage.js');
 
@@ -35,6 +36,17 @@ const server = http.createServer((req, res) => {
   }
 
   // ---- API: sample inbox so the demo works out of the box ----------------
+  if (req.method === 'GET' && url.pathname === '/api/live') {
+    try {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(fs.readFileSync(path.join(DATA, 'live-inbox.json'), 'utf8'));
+    } catch {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No live inbox synced yet' }));
+    }
+    return;
+  }
+
   if (req.method === 'GET' && url.pathname === '/api/sample') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(fs.readFileSync(SAMPLE_PATH, 'utf8'));
@@ -49,7 +61,7 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const entry = JSON.parse(body);
-        const logPath = path.join(__dirname, 'data', 'approvals.json');
+        const logPath = path.join(DATA, 'approvals.json');
         let log = [];
         try { log = JSON.parse(fs.readFileSync(logPath, 'utf8')); } catch {}
         log.push({ ...entry, approvedAt: new Date().toISOString() });

@@ -67,15 +67,15 @@
     <h1>Smart Inbox Triage <span>— morning summary</span></h1>
     <div>
       <button class="ghost" id="darkToggle">🌙 Dark mode</button>
-      <button class="primary" id="triageBtn">Generate morning summary</button>
+      <button class="primary" id="triageBtn">Load demo inbox</button>
     </div>
   </div>
-  <div class="tagline">AI sorts the inbox — you just read the action items and approve. Nothing else to do.</div>
+  <div class="tagline">Connected to your hermessi Gmail. Your inbox is synced automatically — you just read the action items and approve. Nothing else to do.</div>
 
   <div class="wrap">
     <div id="summary" class="summary-card" style="display:none"></div>
     <div id="results"></div>
-    <div class="empty" id="empty">Click <b>Generate morning summary</b> — the sample inbox loads automatically. To use your own emails, paste them as JSON below first.</div>
+    <div class="empty" id="empty">Loading your live inbox…</div>
     <details style="margin-top:24px">
       <summary style="cursor:pointer;color:var(--muted)">Paste your own emails (JSON)</summary>
       <textarea id="pasteBox" rows="8" style="width:100%;margin-top:10px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:monospace;font-size:12px"
@@ -154,6 +154,22 @@ async function triage(list) {
   data = await res.json();
   render();
 }
+
+async function loadLive() {
+  try {
+    const res = await fetch('/api/live');
+    if (!res.ok) throw new Error();
+    data = await res.json();
+    $('#empty').style.display = 'none';
+    $('#summary').style.display = '';
+    const t = new Date(data.syncedAt).toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+    $('#summary').insertAdjacentHTML('beforeend', `<div style="margin-top:10px;color:var(--muted);font-size:12px">📥 Live Gmail sync — last updated ${t}</div>`);
+    render();
+  } catch {
+    $('#empty').innerHTML = 'No live sync yet — click <b>Generate morning summary</b> to load the demo inbox, or paste emails below.';
+  }
+}
+loadLive();
 
 $('#triageBtn').onclick = async () => {
   try {
