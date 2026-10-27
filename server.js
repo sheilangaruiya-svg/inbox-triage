@@ -8,9 +8,12 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const PORT = process.env.PORT || 3000;
-const DATA = process.env.DATA_DIR || path.join(__dirname, 'data');
+const DATA = (process.env.DATA_DIR && process.env.DATA_DIR !== '$DATA_DIR')
+  ? process.env.DATA_DIR
+  : path.join(os.tmpdir(), 'inbox-triage');
 const SAMPLE_PATH = path.join(__dirname, 'data', 'sample-inbox.json');
 const triage = require('./lib/triage.js');
 const https = require('https');
@@ -51,7 +54,10 @@ const server = http.createServer((req, res) => {
   if (req.method === 'GET' && url.pathname === '/api/live') {
     try {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(fs.readFileSync(path.join(DATA, 'live-inbox.json'), 'utf8'));
+      let raw;
+      try { raw = fs.readFileSync(path.join(DATA, 'live-inbox.json'), 'utf8'); }
+      catch { raw = fs.readFileSync(path.join(__dirname, 'data', 'live-inbox.json'), 'utf8'); }
+      res.end(raw);
     } catch {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'No live inbox synced yet' }));
@@ -98,7 +104,7 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       let text = '';
       try { text = JSON.parse(body).text || ''; } catch {}
-      const hook = readSettings().slackWebhook;
+      const hook = readSettings().slackWebhook || process.env.SLACK_WEBHOOK || '';
       if (!hook || !/^https:\/\/hooks\.slack\.com\//.test(hook)) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'no valid Slack webhook saved' }));
