@@ -146,6 +146,25 @@
       </div>
       <p class="muted" style="margin-top:10px" id="webhookState"></p>
     </div>
+
+    <div class="card">
+      <h3 style="font-size:15px">Automatic sync schedule</h3>
+      <p class="muted" style="margin:4px 0 12px">Pick the time, days and timezone for the automatic morning summary.</p>
+      <div class="field" style="align-items:center">
+        <label class="muted" for="schedTime">Time</label>
+        <input id="schedTime" type="time" value="07:00" style="max-width:150px;min-width:130px" />
+        <label class="muted" for="schedTz">Time zone</label>
+        <select id="schedTz" style="flex:1;min-width:230px;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font:inherit;font-size:13.5px"></select>
+      </div>
+      <div class="field" style="gap:6px">
+        <span class="muted" style="align-self:center;min-width:64px">Days</span>
+        <span id="dayPicker" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+      </div>
+      <div class="field">
+        <button class="btn btn-primary" id="saveSchedBtn">Save schedule</button>
+        <span class="muted" id="schedState" style="align-self:center"></span>
+      </div>
+    </div>
   </section>
 </main>
 <div class="toast" id="toast"></div>
@@ -336,7 +355,38 @@ async function requestSync(account){
 }
 let lastSync = null;
 $('#syncBtn').onclick=()=>requestSync(null);
-loadSettings(); loadData();
+// ---- schedule --------------------------------------------------------
+const DAYS=[['Sun',0],['Mon',1],['Tue',2],['Wed',3],['Thu',4],['Fri',5],['Sat',6]];
+const ZONES=['America/New_York','America/Chicago','America/Denver','America/Los_Angeles','America/Sao_Paulo',
+  'Europe/London','Europe/Paris','Europe/Berlin','Africa/Nairobi','Africa/Lagos','Asia/Dubai','Asia/Karachi',
+  'Asia/Kolkata','Asia/Singapore','Asia/Tokyo','Australia/Sydney','Pacific/Auckland','UTC'];
+function initScheduleUI(){
+  $('#schedTz').innerHTML=ZONES.map(z=>`<option value="${z}">${z.replace(/_/g,' ')}</option>`).join('');
+  $('#dayPicker').innerHTML=DAYS.map(([l,v])=>`<button class="btn btn-ghost" data-day="${v}" style="padding:6px 10px;font-size:12.5px">${l}</button>`).join('');
+  $('#dayPicker').querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>b.classList.toggle('on-day'));
+  const s=settings.schedule||{time:'07:00',days:[1,2,3,4,5,6,0],timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'America/New_York'};
+  $('#schedTime').value=s.time||'07:00';
+  if(ZONES.includes(s.timezone)) $('#schedTz').value=s.timezone;
+  ($('#dayPicker').querySelectorAll('[data-day]')).forEach(b=>b.classList.toggle('on-day',(s.days||[0,1,2,3,4,5,6]).includes(Number(b.dataset.day))));
+  $('#schedState').textContent=s.applied? `Active: ${s.time} · ${(s.days||[]).length===7?'every day':(s.days||[]).length+' days/week'} · ${s.timezone}` : 'Using default: 7:00 AM ET daily.';
+}
+function currentSchedule(){
+  const days=[...$('#dayPicker').querySelectorAll('.on-day')].map(b=>Number(b.dataset.day));
+  return {time:$('#schedTime').value||'07:00', days:days.length?days:[0,1,2,3,4,5,6], timezone:$('#schedTz').value, applied:false};
+}
+$('#saveSchedBtn').onclick=async()=>{
+  const sched=currentSchedule();
+  await saveSettings({schedule:sched});
+  toast('Schedule saved — applying…');
+  try{
+    const r=await fetch('/api/schedule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sched)});
+    const j=await r.json().catch(()=>({}));
+    if(r.ok&&j.ok){ sched.applied=true; await saveSettings({schedule:sched}); $('#schedState').textContent=`Active: ${sched.time} · ${sched.days.length===7?'every day':sched.days.length+' days/week'} · ${sched.timezone}`; toast('Schedule applied ✅'); }
+    else toast('Could not apply schedule'+(j.error?': '+j.error:''));
+  }catch(_){ toast('Could not reach the scheduler'); }
+};
+
+loadSettings().then(initScheduleUI); loadData();
 </script>
 </body>
 </html>

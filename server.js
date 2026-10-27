@@ -20,7 +20,7 @@ const https = require('https');
 
 const SETTINGS_PATH = () => path.join(DATA, 'settings.json');
 function readSettings() {
-  try { return JSON.parse(fs.readFileSync(SETTINGS_PATH(), 'utf8')); } catch { return { accounts: [], slackWebhook: '' }; }
+  try { return JSON.parse(fs.readFileSync(SETTINGS_PATH(), 'utf8')); } catch { return { accounts: [], slackWebhook: '', schedule: null }; }
 }
 function writeSettings(s) {
   try { fs.mkdirSync(DATA, { recursive: true }); fs.writeFileSync(SETTINGS_PATH(), JSON.stringify(s, null, 2)); } catch (e) { console.error(e.message); }
@@ -85,7 +85,7 @@ const server = http.createServer((req, res) => {
       req.on('end', () => {
         try {
           const s = JSON.parse(body);
-          writeSettings({ accounts: s.accounts || [], slackWebhook: s.slackWebhook || '' });
+          writeSettings({ accounts: s.accounts || [], slackWebhook: s.slackWebhook || '', schedule: s.schedule || null });
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ ok: true }));
         } catch (e) {
@@ -124,6 +124,30 @@ const server = http.createServer((req, res) => {
         });
       });
       r.on('error', (e) => { res.writeHead(502, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: e.message })); });
+      r.write(payload); r.end();
+    });
+    return;
+  }
+
+  // ---- API: schedule change (asks Argus to reschedule the daily run) ------
+  if (req.method === 'POST' && url.pathname === '/api/schedule') {
+    let b = '';
+    req.on('data', (c) => (b += c));
+    req.on('end', () => {
+      const hookUrl = process.env.SYNC_HOOK_URL || '';
+      const secret = process.env.SYNC_HOOK_SECRET || '';
+      if (!hookUrl) { res.writeHead(400, {'Content-Type':'application/json'}); res.end(JSON.stringify({error:'scheduler not configured'})); return; }
+      let sched = {};
+      try { sched = JSON.parse(b || '{}'); } catch {}
+      const payload = JSON.stringify({ source:'inbox-triage', action:'schedule', schedule: sched, requestedAt: new Date().toISOString() });
+      const sig = require('crypto').createHmac('sha256', secret).update(payload).digest('hex');
+      const u = new URL(hookUrl);
+      const r = https.request({ hostname:u.hostname, path:u.pathname+u.search, method:'POST',
+        headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(payload),'X-Signature':'sha256='+sig,'X-Hub-Signature-256':'sha256='+sig} }, (resp)=>{
+        resp.on('data',()=>{});
+        resp.on('end',()=>{ res.writeHead(200,{'Content-Type':'application/json'}); res.end(JSON.stringify({ok:resp.statusCode<300,status:resp.statusCode,schedule:sched})); });
+      });
+      r.on('error',(e)=>{ res.writeHead(502,{'Content-Type':'application/json'}); res.end(JSON.stringify({error:e.message})); });
       r.write(payload); r.end();
     });
     return;
