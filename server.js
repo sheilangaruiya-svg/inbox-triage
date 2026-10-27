@@ -14,6 +14,9 @@ const DATA = process.env.DATA_DIR || path.join(__dirname, 'data');
 const SAMPLE_PATH = path.join(__dirname, 'data', 'sample-inbox.json');
 const triage = require('./lib/triage.js');
 
+process.on('uncaughtException', (e) => console.error('caught:', e.message));
+process.on('unhandledRejection', (e) => console.error('caught rejection:', e));
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
 
