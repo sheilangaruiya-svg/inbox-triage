@@ -90,7 +90,7 @@
     <button data-view="accounts">👤 Gmail accounts</button>
     <button data-view="settings">⚙️ Slack &amp; settings</button>
   </div>
-  <div class="sidefoot">Auto-sync: 7:00 AM ET daily.<br>Built for Hermessi.</div>
+  <div class="sidefoot" id="sidefoot">Auto-sync: loading…<br>Built for Hermessi.</div>
 </aside>
 
 <main class="main">
@@ -360,7 +360,20 @@ const DAYS=[['Sun',0],['Mon',1],['Tue',2],['Wed',3],['Thu',4],['Fri',5],['Sat',6
 const ZONES=['America/New_York','America/Chicago','America/Denver','America/Los_Angeles','America/Sao_Paulo',
   'Europe/London','Europe/Paris','Europe/Berlin','Africa/Nairobi','Africa/Lagos','Asia/Dubai','Asia/Karachi',
   'Asia/Kolkata','Asia/Singapore','Asia/Tokyo','Australia/Sydney','Pacific/Auckland','UTC'];
+function scheduleLabel(){
+  const s=settings.schedule;
+  if(!s||!s.time) return 'Auto-sync: 7:00 AM New York, daily';
+  const days=(s.days||[]).slice().sort();
+  const dayTxt = days.length===7 ? 'daily'
+    : days.length===5 && String(days)==='1,2,3,4,5' ? 'Mon–Fri'
+    : days.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ');
+  const [hh,mm]=(s.time||'07:00').split(':').map(Number);
+  const ap=hh>=12?'PM':'AM'; const h12=((hh+11)%12)+1;
+  const t=`${h12}:${String(mm).padStart(2,'0')} ${ap}`;
+  return `Auto-sync: ${t} ${(s.timezone||'').split('/').pop().replace(/_/g,' ')}, ${dayTxt}`;
+}
 function initScheduleUI(){
+  if($('#sidefoot')) $('#sidefoot').innerHTML = scheduleLabel()+'<br>Built for Hermessi.';
   $('#schedTz').innerHTML=ZONES.map(z=>`<option value="${z}">${z.replace(/_/g,' ')}</option>`).join('');
   $('#dayPicker').innerHTML=DAYS.map(([l,v])=>`<button class="btn btn-ghost" data-day="${v}" style="padding:6px 10px;font-size:12.5px">${l}</button>`).join('');
   $('#dayPicker').querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>b.classList.toggle('on-day'));
