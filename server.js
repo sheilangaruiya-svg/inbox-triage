@@ -97,6 +97,31 @@ const server = http.createServer((req, res) => {
     }
   }
 
+  // ---- API: Sync now (asks Argus to pull Gmail and refresh this app) ------
+  if (req.method === 'POST' && url.pathname === '/api/sync-now') {
+    const hookUrl = process.env.SYNC_HOOK_URL || '';
+    const secret = process.env.SYNC_HOOK_SECRET || '';
+    if (!hookUrl) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'sync trigger not configured' }));
+      return;
+    }
+    const payload = JSON.stringify({ source: 'inbox-triage', requestedAt: new Date().toISOString() });
+    const sig = require('crypto').createHmac('sha256', secret).update(payload).digest('hex');
+    const u = new URL(hookUrl);
+    const r = https.request({ hostname: u.hostname, path: u.pathname + u.search, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload), 'X-Signature': 'sha256=' + sig, 'X-Hub-Signature-256': 'sha256=' + sig } }, (resp) => {
+      let b = ''; resp.on('data', (c) => (b += c));
+      resp.on('end', () => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: resp.statusCode < 300, status: resp.statusCode }));
+      });
+    });
+    r.on('error', (e) => { res.writeHead(502, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: e.message })); });
+    r.write(payload); r.end();
+    return;
+  }
+
   // ---- API: send to Slack ------------------------------------------------
   if (req.method === 'POST' && url.pathname === '/api/slack/send') {
     let body = '';

@@ -306,7 +306,32 @@ async function loadData(){
     render();
   }catch(_){ $('#headline').textContent='No sync yet — click ↻ Sync now.'; }
 }
-$('#syncBtn').onclick=async()=>{ toast('Sync is set to run automatically at 7:00 AM ET. Ask your assistant for an instant refresh.'); };
+let lastSync = null;
+$('#syncBtn').onclick=async()=>{
+  const btn=$('#syncBtn'); btn.disabled=true; btn.textContent='↻ Syncing…';
+  toast('Pulling your inbox now — this takes a few seconds.');
+  try{
+    const r=await fetch('/api/sync-now',{method:'POST'});
+    const j=await r.json();
+    if(!r.ok||j.ok===false){ toast('Sync could not start: '+(j.error||('status '+j.status))); }
+    else{
+      // wait for fresh data to land
+      const before = data && data.syncedAt ? data.syncedAt : null;
+      let tries=0;
+      const iv=setInterval(async()=>{
+        tries++;
+        await loadData();
+        if((data && data.syncedAt && data.syncedAt!==before) || tries>=8){
+          clearInterval(iv);
+          if(tries<8) toast('Synced ✅');
+          else toast('Sync is still running — refresh in a moment.');
+        }
+      },2500);
+    }
+  }catch(e){ toast('Could not reach the sync service'); }
+  setTimeout(()=>{ btn.disabled=false; btn.textContent='↻ Sync now'; }, 20000);
+  btn.disabled=false; btn.textContent='↻ Sync now';
+};
 loadSettings(); loadData();
 </script>
 </body>

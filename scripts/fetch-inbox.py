@@ -16,6 +16,20 @@ def run(args, **kw):
         print(p.stderr, file=sys.stderr); sys.exit(1)
     return p.stdout
 
+# 0. Which accounts to scan?
+settings_path = ROOT / 'data' / 'settings.json'
+accounts = []
+if settings_path.exists():
+    try:
+        accounts = json.loads(settings_path.read_text()).get('accounts', [])
+    except Exception:
+        accounts = []
+connected = [a['email'] for a in accounts if a.get('connected')]
+pending = [a['email'] for a in accounts if not a.get('connected')]
+print('connected accounts:', connected or ['(default)'])
+if pending:
+    print('pending sign-in, skipped this run:', pending)
+
 # 1. Search: last 3 days of the real inbox
 out = run(GMAIL + ['search', 'in:inbox newer_than:3d', '--limit', '30'])
 listing = [json.loads(l) for l in out.splitlines() if l.startswith('{')]
@@ -54,4 +68,8 @@ out = subprocess.run(['node', '-e', '''
 if out.returncode != 0:
     print(out.stderr, file=sys.stderr); sys.exit(1)
 print(out.stdout.strip())
+result_meta = json.loads((ROOT / 'data' / 'live-inbox.json').read_text())
+result_meta['accounts'] = accounts
+result_meta['pendingAccounts'] = pending
+(ROOT / 'data' / 'live-inbox.json').write_text(json.dumps(result_meta, indent=2))
 print('wrote data/live-inbox.json')
