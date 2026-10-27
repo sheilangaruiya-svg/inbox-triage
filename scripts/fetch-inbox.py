@@ -68,8 +68,11 @@ out = subprocess.run(['node', '-e', '''
 if out.returncode != 0:
     print(out.stderr, file=sys.stderr); sys.exit(1)
 print(out.stdout.strip())
-result_meta = json.loads((ROOT / 'data' / 'live-inbox.json').read_text())
-result_meta['accounts'] = accounts
-result_meta['pendingAccounts'] = pending
-(ROOT / 'data' / 'live-inbox.json').write_text(json.dumps(result_meta, indent=2))
-print('wrote data/live-inbox.json')
+import sys as _sys
+_sys.path.insert(0, str(ROOT / 'scripts'))
+import summarize
+data = summarize.run(ROOT / 'data' / 'live-inbox.json')
+data['accounts'] = accounts
+data['pendingAccounts'] = pending
+(ROOT / 'data' / 'live-inbox.json').write_text(json.dumps(data, indent=2))
+print('wrote data/live-inbox.json + summary')

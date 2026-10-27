@@ -202,10 +202,19 @@ function card(e){
   const key=e.bucket.replace(' ','-');
   const badge=e.done?'<span class="badge done">✅ APPROVED</span>':`<span class="badge ${key}">${esc(e.bucket)}</span>`;
   const approve=(e.bucket==='NEEDS ACTION'&&!e.done)?`<button class="btn btn-ok" data-approve="${esc(e.id)}">Approve &amp; done</button>`:'';
+  const meta = (e.attention==='NEEDS ACTION'||true) && (e.deadline || e.owner) ? `
+    <div style="display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12.5px;margin:4px 0 8px">
+      ${e.attention?`<span><b style="color:var(--accent)">${esc(e.attention.toUpperCase())}</b></span>`:''}
+      ${e.owner?`<span>👤 ${esc(e.owner)}</span>`:''}
+      ${e.deadline?`<span>⏰ ${esc(e.deadline)}</span>`:''}
+      ${e.link?`<span><a href="${esc(e.link)}" target="_blank" rel="noopener" style="color:var(--accent)">Open email ↗</a></span>`:''}
+    </div>` : '';
+  const ctx = e.context ? `<div class="snippet">${esc(e.context)}</div>` : `<div class="snippet">${esc((e.body||'').slice(0,190))}</div>`;
   return `<div class="email ${key} ${e.done?'done':''}">
     <div class="row"><div class="from">${esc(e.from)}</div>${badge}</div>
     <div class="subject">${esc(e.subject)}</div>
-    <div class="snippet">${esc((e.body||'').slice(0,190))}</div>
+    ${meta}
+    ${ctx}
     <div class="row" style="align-items:center"><span class="next"><b>Next step:</b> ${esc(e.nextStep)}</span>${approve}</div>
   </div>`;
 }
