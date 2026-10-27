@@ -394,7 +394,7 @@ $('#saveSchedBtn').onclick=async()=>{
   try{
     const r=await fetch('/api/schedule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sched)});
     const j=await r.json().catch(()=>({}));
-    if(r.ok&&j.ok){ sched.applied=true; await saveSettings({schedule:sched}); $('#schedState').textContent=`Active: ${sched.time} · ${sched.days.length===7?'every day':sched.days.length+' days/week'} · ${sched.timezone}`; toast('Schedule applied ✅'); }
+    if(r.ok&&j.ok){ sched.applied=true; settings.schedule=sched; $('#schedState').textContent=`Active: ${sched.time} · ${sched.days.length===7?'every day':sched.days.length+' days/week'} · ${sched.timezone}`; $('#sidefoot').innerHTML=scheduleLabel()+'<br>Built for Hermessi.'; toast('Schedule applied ✅'); }
     else toast('Could not apply schedule'+(j.error?': '+j.error:''));
   }catch(_){ toast('Could not reach the scheduler'); }
 };
