@@ -289,7 +289,7 @@ async function loadSettings(){
   $('#accountList').innerHTML=(settings.accounts||[]).map(a=>
     `<div class="acct"><span><span class="dot ${a.connected?'':'pending'}"></span>${esc(a.email)}</span>
      <span style="display:flex;gap:8px;align-items:center">
-       <span class="muted">${a.connected?'Connected · synced daily':'Awaiting one-time sign-in'}</span>
+       <span class="muted">${a.connected?(a.via==='forwarding'?'Connected · forwarded here':'Connected · synced daily'):'Awaiting one-time sign-in'}</span>
        ${a.connected?`<button class="btn btn-ghost" data-syncacct="${esc(a.email)}" style="padding:6px 11px">↻ Sync</button>`:''}
      </span></div>`).join('')
     ||'<div class="muted">No accounts yet.</div>';

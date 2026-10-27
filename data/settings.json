@@ -3,7 +3,13 @@
     {
       "email": "sheilangaruiya@hermessi.com",
       "connected": true
+    },
+    {
+      "email": "sheilangaruiya4@gmail.com",
+      "connected": true,
+      "via": "forwarding"
     }
   ],
-  "slackWebhook": ""
+  "slackWebhook": "",
+  "schedule": null
 }
