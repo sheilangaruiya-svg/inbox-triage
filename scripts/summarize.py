@@ -139,42 +139,24 @@ def fmt_date():
 
 
 def build_text(emails, summary):
+    """The delivered message: ONLY what needs her action, one tight line each."""
     actions = [e for e in emails if e['bucket'] == 'NEEDS ACTION']
-    execs = [e for e in actions if e['attention'] == 'executive']
-    eas = [e for e in actions if e['attention'] == 'ea']
-    fyi = [e for e in emails if e['bucket'] == 'FYI']
     noise = [e for e in emails if e['bucket'] == 'NOISE']
+    fyi_n = sum(1 for e in emails if e['bucket'] == 'FYI')
 
-    lines = []
-    lines.append(f'\U00002600\ufe0f Hermessi inbox summary \u2014 {fmt_date()}')
-    lines.append(f'Filtered from {summary["total"]} emails last 3 days \u00b7 {len(noise)} filtered as noise\n')
+    if not actions:
+        return (f'\U00002600\ufe0f Hermessi \u2014 {fmt_date()}\n'
+                f'No emails need your action today. All clear \U0001F60C')
 
-    def block(items, label):
-        if not items:
-            return []
-        out = [f'\U000026A1 {label} ({len(items)})']
-        for i, e in enumerate(items, 1):
-            out.append(f'{i}. \U0001F4E7 {e["subject"]}')
-            out.append(f'   What happened: {e["context"]}')
-            out.append(f'   Why it matters: {e["why"]}')
-            out.append(f'   Next step: {e["nextStep"]}')
-            out.append(f'   Owner: {e["owner"]} \u00b7 Deadline: {e["deadline"]}')
-            out.append(f'   Open: {e["link"]}')
-        out.append('')
-        return out
-
-    lines += block(execs, 'EXECUTIVE ATTENTION REQUIRED')
-    lines += block(eas, 'EA ACTIONS')
-
-    if fyi:
-        lines.append(f'\U0001F4D6 FYI ({len(fyi)}) \u2014 read for awareness:')
-        for e in fyi[:8]:
-            lines.append(f'\u2022 {e["subject"]} \u2014 {e["context"][:90]}')
-        if len(fyi) > 8:
-            lines.append(f'\u2022 +{len(fyi)-8} more')
+    lines = [f'\U00002600\ufe0f Hermessi \u2014 {fmt_date()}',
+             f'{len(actions)} email{"s" if len(actions)!=1 else ""} need{"s" if len(actions)==1 else ""} your action\n']
+    for i, e in enumerate(actions, 1):
+        lines.append(f'{i}. {e["subject"]}')
+        lines.append(f'   {e["context"]}')
+        lines.append(f'   \u2192 {e["nextStep"]} \u00b7 {e["deadline"]}')
+        lines.append(f'   Open: {e["link"]}')
         lines.append('')
-    lines.append(f'\u26A0\ufe0f Noise filtered: {len(noise)}')
-
+    lines.append(f'(FYI {fyi_n} \u00b7 noise {len(noise)} \u2014 in the app, no action needed)')
     return '\n'.join(lines)
 
 
