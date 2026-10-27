@@ -3,188 +3,311 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Smart Inbox Triage — Hermessi Morning Summary</title>
+<title>Hermessi — Inbox Triage</title>
 <link rel="icon" href="/logo.svg" type="image/svg+xml">
 <style>
-  :root {
-    --bg: #f5f6f8; --card: #ffffff; --text: #1a1d23; --muted: #6b7280;
-    --accent: #2563eb; --border: #e5e7eb; --ok: #059669; --ok-bg: #d1fae5;
-    --action: #dc2626; --action-bg: #fee2e2;
-    --fyi: #2563eb; --fyi-bg: #dbeafe;
-    --noise: #6b7280; --noise-bg: #f3f4f6;
+  :root{
+    --bg:#f7f8fa; --panel:#fff; --sidebar:#0f172a; --sbtext:#cbd5e1;
+    --text:#0f172a; --muted:#64748b; --border:#e6e8ec; --accent:#4f46e5; --accent2:#7c3aed;
+    --action:#dc2626; --actionbg:#fef2f2; --fyi:#2563eb; --fyibg:#eff6ff;
+    --noise:#64748b; --noisebg:#f1f5f9; --ok:#059669; --okbg:#ecfdf5;
   }
-  body.dark {
-    --bg: #101418; --card: #1a2026; --text: #e5e7eb; --muted: #9ca3af;
-    --accent: #60a5fa; --border: #2b3440; --ok: #34d399; --ok-bg: #11312a;
-    --action: #f87171; --action-bg: #3a1d1d;
-    --fyi: #93c5fd; --fyi-bg: #1e2a3d;
-    --noise: #9ca3af; --noise-bg: #232b33;
+  body.dark{
+    --bg:#0b1120; --panel:#141c2e; --sidebar:#070c16; --sbtext:#94a3b8;
+    --text:#e2e8f0; --muted:#94a3b8; --border:#22304a; --accent:#818cf8; --accent2:#a78bfa;
+    --action:#f87171; --actionbg:#2d1515; --fyi:#93c5fd; --fyibg:#122236;
+    --noise:#94a3b8; --noisebg:#1b2436; --ok:#34d399; --okbg:#0f2a22;
   }
-  * { box-sizing: border-box; margin: 0; }
-  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
-  .topbar { display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto 6px; }
-  h1 { font-size: 22px; }
-  h1 span { color: var(--muted); font-weight: 400; }
-  button { font: inherit; cursor: pointer; border: none; border-radius: 8px; padding: 9px 16px; }
-  .primary { background: var(--accent); color: #fff; font-weight: 600; }
-  .ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
-  .ghost:hover { color: var(--text); }
-  .wrap { max-width: 900px; margin: 0 auto; }
-  .tagline { color: var(--muted); font-size: 13px; margin-bottom: 20px; max-width: 900px; margin-left: auto; margin-right: auto; }
-  .summary-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 18px; }
-  .summary-card h2 { color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-size: 12px; margin-bottom: 10px; }
-  .headline { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
-  .stats { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-  .stat { padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; }
-  .stat.action { background: var(--action-bg); color: var(--action); }
-  .stat.fyi { background: var(--fyi-bg); color: var(--fyi); }
-  .stat.noise { background: var(--noise-bg); color: var(--noise); }
-  .card { background: var(--card); border: 1px solid var(--border); border-left: 5px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
-  .card.NEEDS-ACTION { border-left-color: var(--action); }
-  .card.FYI { border-left-color: var(--fyi); }
-  .card.NOISE { border-left-color: var(--noise); opacity: .75; }
-  .card.done { opacity: .55; }
-  .card.done .subject { text-decoration: line-through; }
-  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-  .from { font-weight: 600; }
-  .badge { font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
-  .badge.NEEDS-ACTION { background: var(--action-bg); color: var(--action); }
-  .badge.FYI { background: var(--fyi-bg); color: var(--fyi); }
-  .badge.NOISE { background: var(--noise-bg); color: var(--noise); }
-  .badge.done { background: var(--ok-bg); color: var(--ok); }
-  .subject { font-size: 15px; margin: 6px 0 4px; font-weight: 600; }
-  .body-snippet { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
-  .next-step { font-size: 13px; background: var(--bg); border-radius: 8px; padding: 8px 12px; display: inline-block; margin-right: 10px; }
-  .next-step strong { color: var(--accent); }
-  .approve { background: var(--ok); color: #fff; font-weight: 600; font-size: 13px; padding: 8px 14px; }
-  .empty { text-align: center; color: var(--muted); padding: 40px 0; }
-  .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 20px 0 10px; font-weight: 700; }
-  .handover { background: var(--card); border: 1px dashed var(--border); border-radius: 10px; padding: 12px 16px; margin-top: 20px; color: var(--muted); font-size: 13px; }
-  .progress { font-size: 13px; font-weight: 600; color: var(--ok); }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,'Segoe UI',Inter,Roboto,sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
+  .sidebar{width:236px;background:var(--sidebar);color:var(--sbtext);padding:20px 14px;display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}
+  .brand img{width:36px;height:36px;border-radius:9px}
+  .brand b{color:#fff;font-size:15px;line-height:1.1}
+  .brand small{display:block;color:#7c8ba3;font-size:11px}
+  .nav{display:flex;flex-direction:column;gap:4px}
+  .nav button{text-align:left;background:none;border:0;color:inherit;font:inherit;font-size:14px;padding:9px 12px;border-radius:8px;cursor:pointer}
+  .nav button:hover{background:rgba(255,255,255,.07);color:#fff}
+  .nav button.active{background:#243047;color:#fff;font-weight:600}
+  .sidefoot{margin-top:auto;font-size:11px;color:#6b7a94;line-height:1.5;padding-top:12px}
+  .main{flex:1;min-width:0;padding:22px 28px 48px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:18px}
+  .topbar h1{font-size:20px}
+  .topbar .sub{color:var(--muted);font-size:13px;margin-top:2px}
+  .btn{font:inherit;cursor:pointer;border-radius:9px;padding:9px 14px;border:1px solid transparent}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:600;border:0}
+  .btn-ghost{background:var(--panel);color:var(--text);border:1px solid var(--border)}
+  .btn-ghost:hover{border-color:var(--accent)}
+  .btn-ok{background:var(--ok);color:#fff;font-weight:600;font-size:13px;padding:8px 13px;border:0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:16px}
+  .eyebrow{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:800}
+  h2.big{font-size:23px;margin:8px 0 14px}
+  .chips{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .chip{padding:7px 13px;border-radius:999px;font-size:13px;font-weight:600}
+  .chip.action{background:var(--actionbg);color:var(--action)}
+  .chip.fyi{background:var(--fyibg);color:var(--fyi)}
+  .chip.noise{background:var(--noisebg);color:var(--noise)}
+  .prog{font-size:13px;font-weight:700;color:var(--ok);margin-left:6px}
+  .share{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);margin-top:16px;padding-top:14px}
+  .share .lbl{font-size:13px;color:var(--muted)}
+  .section{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:800;margin:20px 0 9px}
+  .email{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:12px;padding:15px 18px;margin-bottom:10px}
+  .email.NEEDS-ACTION{border-left-color:var(--action)}
+  .email.FYI{border-left-color:var(--fyi)}
+  .email.NOISE{border-left-color:var(--noise);opacity:.72}
+  .email.done{opacity:.5}
+  .email.done .subject{text-decoration:line-through}
+  .row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+  .from{font-weight:600;font-size:14px}
+  .badge{font-size:10.5px;font-weight:800;letter-spacing:.05em;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .badge.NEEDS-ACTION{background:var(--actionbg);color:var(--action)}
+  .badge.FYI{background:var(--fyibg);color:var(--fyi)}
+  .badge.NOISE{background:var(--noisebg);color:var(--noise)}
+  .badge.done{background:var(--okbg);color:var(--ok)}
+  .subject{font-size:14.5px;font-weight:600;margin:6px 0 4px}
+  .snippet{color:var(--muted);font-size:12.5px;line-height:1.5;margin-bottom:9px}
+  .next{font-size:12.5px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 11px;display:inline-block}
+  .next b{color:var(--accent)}
+  .empty{color:var(--muted);text-align:center;padding:36px 16px;font-size:14px}
+  .field{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  input{flex:1;min-width:230px;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font:inherit;font-size:13.5px}
+  .acct{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--border);font-size:14px}
+  .acct:last-child{border-bottom:none}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:8px;background:var(--ok)}
+  .dot.pending{background:#f59e0b}
+  .muted{color:var(--muted);font-size:12.5px}
+  .toast{position:fixed;right:22px;bottom:22px;background:#0f172a;color:#fff;padding:13px 18px;border-radius:10px;font-size:13.5px;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none;max-width:340px}
+  .toast.show{opacity:1;transform:none}
+  .hidden{display:none!important}
 </style>
 </head>
 <body>
+<aside class="sidebar">
+  <div class="brand"><img src="/logo.svg" alt="Hermessi"><div><b>Hermessi</b><small>Inbox Triage</small></div></div>
+  <div class="nav">
+    <button class="active" data-view="summary">☀️ Morning summary</button>
+    <button data-view="all">📥 All emails</button>
+    <button data-view="accounts">👤 Gmail accounts</button>
+    <button data-view="settings">⚙️ Slack &amp; settings</button>
+  </div>
+  <div class="sidefoot">Auto-sync: 7:00 AM ET daily.<br>Built for Hermessi.</div>
+</aside>
+
+<main class="main">
   <div class="topbar">
-    <div style="display:flex;align-items:center;gap:10px">
-      <img src="/logo.svg" alt="Hermessi" style="width:38px;height:38px;border-radius:9px">
-      <h1 style="margin:0">Smart Inbox Triage <span style="color:var(--muted);font-weight:400">— Hermessi morning summary</span></h1>
-    </div>
     <div>
-      <button class="ghost" id="darkToggle">🌙 Dark mode</button>
-      <button class="primary" id="triageBtn">Load demo inbox</button>
+      <h1 id="viewTitle">Morning summary</h1>
+      <div class="sub" id="viewSub">Only what needs your action, with the next step.</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" id="darkBtn">🌙</button>
+      <button class="btn btn-ghost" id="syncBtn">↻ Sync now</button>
     </div>
   </div>
-  <div class="tagline">Connected to your hermessi Gmail. Your inbox is synced automatically — you just read the action items and approve. Nothing else to do.</div>
 
-  <div class="wrap">
-    <div id="summary" class="summary-card" style="display:none"></div>
-    <div id="results"></div>
-    <div class="empty" id="empty">Loading your live inbox…</div>
-    <details style="margin-top:24px">
-      <summary style="cursor:pointer;color:var(--muted)">Paste your own emails (JSON)</summary>
-      <textarea id="pasteBox" rows="8" style="width:100%;margin-top:10px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:monospace;font-size:12px"
-        placeholder='[{"from":"Boss (Manager)","subject":"Approve X","body":"Please approve by EOD","cc":[]}]'></textarea>
-    </details>
-    <div class="handover" id="handover">🤝 <b>Handover note:</b> if you're out of office, anyone opening this page sees the same summary. Approving an item marks it done — the record of what was approved and when is kept in <code>data/approvals.json</code>.</div>
-  </div>
+  <section id="view-summary">
+    <div class="card">
+      <div class="eyebrow" id="sDate">Morning summary</div>
+      <h2 class="big" id="headline">Loading your inbox…</h2>
+      <div class="chips" id="chips"></div>
+      <div class="share">
+        <span class="lbl">Share:</span>
+        <button class="btn btn-ghost" id="slackBtn">💬 Send to Slack</button>
+        <button class="btn btn-ghost" id="gmailBtn">✉️ Email summary</button>
+        <button class="btn btn-ghost" id="copyBtn">📋 Copy</button>
+      </div>
+    </div>
+    <div id="actionList"></div>
+  </section>
 
+  <section id="view-all" class="hidden"><div id="allList"></div></section>
+
+  <section id="view-accounts" class="hidden">
+    <div class="card">
+      <h3 style="font-size:15px">Gmail accounts</h3>
+      <p class="muted" style="margin:4px 0 8px">Every connected address is scanned each morning. Add as many as you need.</p>
+      <div id="accountList"></div>
+      <div class="field">
+        <input id="newAccount" type="email" placeholder="name@company.com" />
+        <button class="btn btn-primary" id="addAccountBtn">＋ Add Gmail account</button>
+      </div>
+      <p class="muted" style="margin-top:10px">Saved immediately. The first scan of a new address needs a one-time Google sign-in — ask your assistant to connect it.</p>
+    </div>
+  </section>
+
+  <section id="view-settings" class="hidden">
+    <div class="card">
+      <h3 style="font-size:15px">Slack delivery</h3>
+      <p class="muted" style="margin:4px 0 8px">Paste a Slack incoming-webhook URL to enable one-click delivery of the summary.</p>
+      <div class="field">
+        <input id="webhook" type="url" placeholder="https://hooks.slack.com/services/…" />
+        <button class="btn btn-primary" id="saveWebhookBtn">Save</button>
+        <button class="btn btn-ghost" id="testSlackBtn">Send test</button>
+      </div>
+      <p class="muted" style="margin-top:10px" id="webhookState"></p>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
 <script>
-const $ = (s) => document.querySelector(s);
-let data = null;
+const $ = s => document.querySelector(s);
+let data = null, settings = { accounts: [], slackWebhook: '' };
 
-document.getElementById('darkToggle').onclick = (e) => {
-  document.body.classList.toggle('dark');
-  e.target.textContent = document.body.classList.contains('dark') ? '☀️ Light mode' : '🌙 Dark mode';
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),3400); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// navigation
+document.querySelectorAll('.nav button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const v=b.dataset.view;
+    ['summary','all','accounts','settings'].forEach(k=>$('#view-'+k).classList.toggle('hidden',k!==v));
+    const t={summary:['Morning summary','Only what needs your action, with the next step.'],
+      all:['All emails','Everything the sync found, bucketed.'],
+      accounts:['Gmail accounts','Add the addresses you want scanned each morning.'],
+      settings:['Slack & settings','Where the summary can be delivered.']};
+    $('#viewTitle').textContent=t[v][0]; $('#viewSub').textContent=t[v][1];
+  };
+});
+
+// dark mode
+if(localStorage.getItem('dark')==='1') document.body.classList.add('dark');
+$('#darkBtn').onclick=()=>{ document.body.classList.toggle('dark'); localStorage.setItem('dark', document.body.classList.contains('dark')?'1':'0'); };
+
+// email card
+function card(e){
+  const key=e.bucket.replace(' ','-');
+  const badge=e.done?'<span class="badge done">✅ APPROVED</span>':`<span class="badge ${key}">${esc(e.bucket)}</span>`;
+  const approve=(e.bucket==='NEEDS ACTION'&&!e.done)?`<button class="btn btn-ok" data-approve="${esc(e.id)}">Approve &amp; done</button>`:'';
+  return `<div class="email ${key} ${e.done?'done':''}">
+    <div class="row"><div class="from">${esc(e.from)}</div>${badge}</div>
+    <div class="subject">${esc(e.subject)}</div>
+    <div class="snippet">${esc((e.body||'').slice(0,190))}</div>
+    <div class="row" style="align-items:center"><span class="next"><b>Next step:</b> ${esc(e.nextStep)}</span>${approve}</div>
+  </div>`;
+}
+
+function render(){
+  if(!data){ $('#headline').textContent='No sync yet — click ↻ Sync now.'; return; }
+  const s=data.summary;
+  const actions=data.emails.filter(e=>e.bucket==='NEEDS ACTION');
+  const done=actions.filter(e=>e.done).length;
+  $('#sDate').textContent='Morning summary — '+new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  $('#headline').textContent = actions.length===0 ? 'Nothing needs your action this morning. ☀️'
+    : (done===actions.length ? 'All action items approved. ✅'
+    : `${actions.length-done} email${actions.length-done===1?'':'s'} need your action.`);
+  $('#chips').innerHTML=`<span class="chip action">⚡ ${s.needsAction} need action</span>
+    <span class="chip fyi">📖 ${s.fyi} FYI</span>
+    <span class="chip noise">🗑️ ${s.noise} noise</span>
+    ${actions.length?`<span class="prog">${done}/${actions.length} approved</span>`:''}`;
+  const open=data.emails.filter(e=>e.bucket==='NEEDS ACTION');
+  $('#actionList').innerHTML = open.length
+    ? '<div class="section">Needs your action</div>'+open.map(card).join('')
+      + (open.some(e=>!e.done)?'<button class="btn btn-ok" id="approveAll" style="margin-top:6px">Approve all remaining</button>':'')
+    : '<div class="empty">No action items — your inbox is clear. 🎉</div>';
+  const rest=data.emails.filter(e=>e.bucket!=='NEEDS ACTION');
+  $('#allList').innerHTML = rest.length
+    ? '<div class="section">FYI</div>'+rest.filter(e=>e.bucket==='FYI').map(card).join('')
+      +'<div class="section">Noise</div>'+rest.filter(e=>e.bucket==='NOISE').map(card).join('')
+    : '<div class="empty">Nothing else in the last sync.</div>';
+  if($('#approveAll')) $('#approveAll').onclick=()=>approveAll();
+}
+
+// approve
+async function approve(id){
+  const e=data.emails.find(x=>String(x.id)===String(id));
+  if(!e) return;
+  e.done=true; render();
+  try{ await fetch('/api/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:e.id,from:e.from,subject:e.subject,nextStep:e.nextStep})}); }catch(_){}
+  toast('Approved: '+e.subject);
+}
+async function approveAll(){
+  for(const e of data.emails.filter(x=>x.bucket==='NEEDS ACTION'&&!x.done)) await approve(e.id);
+}
+document.addEventListener('click',ev=>{ const b=ev.target.closest('[data-approve]'); if(b) approve(b.dataset.approve); });
+
+// summary text for sharing
+function summaryText(){
+  if(!data) return '';
+  const s=data.summary;
+  const actions=data.emails.filter(e=>e.bucket==='NEEDS ACTION');
+  let out=`☀️ Hermessi inbox summary — ${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}\n`;
+  out+= actions.length? `${actions.length} email${actions.length===1?'':'s'} need action\n\n`:'Nothing needs action today ✅\n\n';
+  actions.forEach(e=>{ out+=`• ${e.from} — ${e.subject}\n  Next step: ${e.nextStep}\n`; });
+  out+=`\nFYI: ${s.fyi} · Noise: ${s.noise}`;
+  return out;
+}
+
+$('#copyBtn').onclick=async()=>{ try{ await navigator.clipboard.writeText(summaryText()); toast('Summary copied'); }catch(_){ toast('Copy failed — select the text manually'); } };
+
+$('#gmailBtn').onclick=()=>{
+  const subject=encodeURIComponent('Hermessi inbox summary — '+new Date().toLocaleDateString());
+  const body=encodeURIComponent(summaryText());
+  window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${subject}&body=${body}`,'_blank');
 };
 
-function bucketLabel(b) { return b; }
+$('#slackBtn').onclick=async()=>{
+  if(!settings.slackWebhook){ toast('Add a Slack webhook in Slack & settings first'); return; }
+  try{
+    const r=await fetch('/api/slack/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:summaryText()})});
+    const j=await r.json();
+    toast(r.ok? 'Sent to Slack ✅' : 'Slack said: '+(j.error||'failed'));
+  }catch(err){ toast('Could not reach Slack'); }
+};
 
-function approve(id) {
-  const e = data.emails.find((x) => x.id === id);
-  if (e) { e.done = true; fetch('/api/approve', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: e.id, from: e.from, subject: e.subject, nextStep: e.nextStep }) }); render(); }
-}
-function approveAll() {
-  data.emails.forEach((e) => { if (e.bucket === 'NEEDS ACTION' && !e.done) approve(e.id); });
-}
-
-function render() {
-  const s = data.summary;
-  const actionItems = data.emails.filter((e) => e.bucket === 'NEEDS ACTION');
-  const doneCount = actionItems.filter((e) => e.done).length;
-  const remaining = actionItems.length - doneCount;
-
-  $('#summary').style.display = '';
-  $('#summary').innerHTML = `
-    <h2>Morning Summary — ${new Date().toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' })}</h2>
-    <div class="headline">${remaining === 0 && actionItems.length > 0 ? 'All action items approved. ✅' : s.headline}</div>
-    <div class="stats">
-      <div class="stat action">⚡ ${s.needsAction} need action</div>
-      <div class="stat fyi">📖 ${s.fyi} FYI</div>
-      <div class="stat noise">🗑️ ${s.noise} noise</div>
-      ${actionItems.length ? `<span class="progress">${doneCount}/${actionItems.length} approved${remaining ? ` · ${remaining} left` : ''}</span>
-        ${remaining ? '<button class="approve" onclick="approveAll()">Approve all remaining</button>' : ''}` : ''}
-    </div>`;
-
-  const order = { 'NEEDS ACTION': 0, FYI: 1, NOISE: 2 };
-  const sorted = [...data.emails].sort((a, b) => order[a.bucket] - order[b.bucket] || b.score - a.score);
-  let lastBucket = null;
-  $('#results').innerHTML = sorted.map((e) => {
-    const key = e.bucket.replace(' ', '-');
-    let label = '';
-    if (e.bucket !== lastBucket) {
-      label = `<div class="section-label">${bucketLabel(e.bucket)}</div>`;
-      lastBucket = e.bucket;
-    }
-    const badge = e.done ? '<div class="badge done">✅ APPROVED</div>' : `<div class="badge ${key}">${bucketLabel(e.bucket)}</div>`;
-    const approveBtn = e.bucket === 'NEEDS ACTION' && !e.done
-      ? `<button class="approve" onclick="approve(${e.id})">Approve &amp; done</button>` : '';
-    return `${label}
-      <div class="card ${key} ${e.done ? 'done' : ''}">
-        <div class="card-head"><div class="from">${e.from}</div>${badge}</div>
-        <div class="subject">${e.subject}</div>
-        <div class="body-snippet">${(e.body || '').slice(0, 180)}</div>
-        <div><span class="next-step"><strong>Next step:</strong> ${e.nextStep}</span> ${approveBtn}</div>
-      </div>`;
-  }).join('');
+// settings
+async function loadSettings(){
+  try{
+    const r=await fetch('/api/settings');
+    if(r.ok) settings=await r.json();
+  }catch(_){}
+  $('#webhook').value=settings.slackWebhook||'';
+  $('#webhookState').textContent=settings.slackWebhook?'✅ A Slack webhook is saved.':'No webhook saved yet.';
+  $('#accountList').innerHTML=(settings.accounts||[]).map(a=>
+    `<div class="acct"><span><span class="dot ${a.connected?'':'pending'}"></span>${esc(a.email)}</span>
+     <span class="muted">${a.connected?'Connected · synced daily':'Awaiting one-time sign-in'}</span></div>`).join('')
+    ||'<div class="muted">No accounts yet.</div>';
 }
 
-async function triage(list) {
-  const res = await fetch('/api/triage', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ emails: list }),
-  });
-  if (!res.ok) throw new Error((await res.json()).error);
-  data = await res.json();
-  render();
+async function saveSettings(patch){
+  settings={...settings,...patch};
+  await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(settings)});
 }
 
-async function loadLive() {
-  try {
-    const res = await fetch('/api/live');
-    if (!res.ok) throw new Error();
-    data = await res.json();
-    $('#empty').style.display = 'none';
-    $('#summary').style.display = '';
-    const t = new Date(data.syncedAt).toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
-    $('#summary').insertAdjacentHTML('beforeend', `<div style="margin-top:10px;color:var(--muted);font-size:12px">📥 Live Gmail sync — last updated ${t}</div>`);
+$('#saveWebhookBtn').onclick=async()=>{
+  await saveSettings({slackWebhook:$('#webhook').value.trim()});
+  toast('Saved'); loadSettings();
+};
+$('#testSlackBtn').onclick=async()=>{
+  await saveSettings({slackWebhook:$('#webhook').value.trim()});
+  try{
+    const r=await fetch('/api/slack/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:'✅ Hermessi Inbox Triage connected — this is a test message.'})});
+    const j=await r.json();
+    toast(r.ok?'Test sent to Slack ✅':'Slack said: '+(j.error||'failed'));
+  }catch(_){ toast('Could not reach Slack'); }
+};
+$('#addAccountBtn').onclick=async()=>{
+  const v=$('#newAccount').value.trim();
+  if(!v||!/@/.test(v)){ toast('Enter a valid email address'); return; }
+  const accounts=[...(settings.accounts||[]).filter(a=>a.email!==v),{email:v,connected:false}];
+  await saveSettings({accounts});
+  $('#newAccount').value='';
+  loadSettings();
+  toast('Account saved — needs one-time sign-in');
+};
+
+// data
+async function loadData(){
+  try{
+    const r=await fetch('/api/live',{cache:'no-store'});
+    if(!r.ok) throw new Error();
+    data=await r.json();
     render();
-  } catch {
-    $('#empty').innerHTML = 'No live sync yet — click <b>Generate morning summary</b> to load the demo inbox, or paste emails below.';
-  }
+  }catch(_){ $('#headline').textContent='No sync yet — click ↻ Sync now.'; }
 }
-loadLive();
-
-$('#triageBtn').onclick = async () => {
-  try {
-    const pasted = $('#pasteBox').value.trim();
-    if (pasted) return triage(JSON.parse(pasted));
-    const res = await fetch('/api/sample');
-    triage(await res.json());
-  } catch (err) {
-    alert('Could not triage: ' + err.message);
-  }
-};
+$('#syncBtn').onclick=async()=>{ toast('Sync is set to run automatically at 7:00 AM ET. Ask your assistant for an instant refresh.'); };
+loadSettings(); loadData();
 </script>
 </body>
 </html>
