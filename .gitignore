@@ -6,3 +6,4 @@ data/raw-inbox.json
 data/live-inbox.json
 data/raw-inbox.json
 .env.local
+app.env

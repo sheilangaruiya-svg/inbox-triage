@@ -11,9 +11,29 @@ const path = require('path');
 const os = require('os');
 
 const PORT = process.env.PORT || 3000;
-const DATA = (process.env.DATA_DIR && process.env.DATA_DIR !== '$DATA_DIR')
-  ? process.env.DATA_DIR
-  : path.join(os.tmpdir(), 'inbox-triage');
+// Load app.env (shipped with the app, gitignored) so the deployment keeps its
+// config across publishes without baking secrets into the publish call.
+(function loadAppEnv() {
+  try {
+    const f = path.join(__dirname, 'app.env');
+    fs.readFileSync(f, 'utf8').split('\n').forEach((line) => {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+      if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+    });
+  } catch (e) { /* no app.env — env comes from the platform */ }
+})();
+
+
+function pickDataDir() {
+  const candidates = [];
+  if (process.env.DATA_DIR && process.env.DATA_DIR !== '$DATA_DIR') candidates.push(process.env.DATA_DIR);
+  candidates.push('/data', path.join(os.tmpdir(), 'inbox-triage'));
+  for (const c of candidates) {
+    try { fs.mkdirSync(c, { recursive: true }); fs.accessSync(c, fs.constants.W_OK); return c; } catch (e) {}
+  }
+  return path.join(os.tmpdir(), 'inbox-triage');
+}
+const DATA = pickDataDir();
 const SAMPLE_PATH = path.join(__dirname, 'data', 'sample-inbox.json');
 const triage = require('./lib/triage.js');
 const https = require('https');
@@ -62,6 +82,26 @@ const server = http.createServer((req, res) => {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'No live inbox synced yet' }));
     }
+    return;
+  }
+
+  // ---- API: health (what the deployment actually has configured) ----------
+  if (req.method === 'GET' && url.pathname === '/api/health') {
+    let syncedAt = null;
+    try { syncedAt = JSON.parse(fs.readFileSync(path.join(DATA, 'live-inbox.json'), 'utf8')).syncedAt || null; }
+    catch {
+      try { syncedAt = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'live-inbox.json'), 'utf8')).syncedAt || null; } catch {}
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      ok: true,
+      dataDir: DATA,
+      schedulerConfigured: !!process.env.SYNC_HOOK_URL,
+      slackConfigured: !!(process.env.SLACK_WEBHOOK || (readSettings().slackWebhook || '')),
+      syncedAt,
+      schedule: readSettings().schedule || null,
+      uptimeSec: Math.round(process.uptime())
+    }));
     return;
   }
 
