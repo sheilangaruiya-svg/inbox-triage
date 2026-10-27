@@ -1,0 +1,53 @@
+[
+  {
+    "id": 1,
+    "from": "Priya Sharma (Client)",
+    "subject": "Contract approval needed by Friday",
+    "body": "Hi, the revised contract is attached. Please review and approve by Friday EOD so we can start onboarding. Let me know if anything looks off.",
+    "cc": []
+  },
+  {
+    "id": 2,
+    "from": "Marcus Lee (Manager)",
+    "subject": "Q3 budget sign-off",
+    "body": "Need your sign-off on the Q3 budget before I can submit it. Can you confirm by tomorrow?",
+    "cc": ["finance@company.com"]
+  },
+  {
+    "id": 3,
+    "from": "no-reply@linkedin.com",
+    "subject": "You appeared in 9 searches this week",
+    "body": "See who's viewing your profile. Unsubscribe anytime."
+  },
+  {
+    "id": 4,
+    "from": "events@techdigest.com",
+    "subject": "Newsletter: This week in AI",
+    "body": "Your weekly digest of the top stories. Unsubscribe"
+  },
+  {
+    "id": 5,
+    "from": "Dana Kim (Partner)",
+    "subject": "Heads up: client visit next month",
+    "body": "FYI - the client may visit the office in November. No action yet, will confirm dates later."
+  },
+  {
+    "id": 6,
+    "from": "Sam Ortiz (Colleague)",
+    "subject": "Quick question on the invoice",
+    "body": "Quick question - should the October invoice go to the client directly or through finance? Can you clarify today?",
+    "cc": []
+  },
+  {
+    "id": 7,
+    "from": "notifications@github.com",
+    "subject": "[repo] Build passed",
+    "body": "Automated message: nightly build passed. No action needed."
+  },
+  {
+    "id": 8,
+    "from": "Ruth Adeyemi (Director)",
+    "subject": "RSVP: leadership offsite",
+    "body": "Please RSVP for the leadership offsite by end of day. Respond with your dietary requirements too."
+  }
+]

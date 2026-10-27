@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart Inbox Triage — Morning Summary</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #ffffff; --text: #1a1d23; --muted: #6b7280;
+    --accent: #2563eb; --border: #e5e7eb; --ok: #059669; --ok-bg: #d1fae5;
+    --action: #dc2626; --action-bg: #fee2e2;
+    --fyi: #2563eb; --fyi-bg: #dbeafe;
+    --noise: #6b7280; --noise-bg: #f3f4f6;
+  }
+  body.dark {
+    --bg: #101418; --card: #1a2026; --text: #e5e7eb; --muted: #9ca3af;
+    --accent: #60a5fa; --border: #2b3440; --ok: #34d399; --ok-bg: #11312a;
+    --action: #f87171; --action-bg: #3a1d1d;
+    --fyi: #93c5fd; --fyi-bg: #1e2a3d;
+    --noise: #9ca3af; --noise-bg: #232b33;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto 6px; }
+  h1 { font-size: 22px; }
+  h1 span { color: var(--muted); font-weight: 400; }
+  button { font: inherit; cursor: pointer; border: none; border-radius: 8px; padding: 9px 16px; }
+  .primary { background: var(--accent); color: #fff; font-weight: 600; }
+  .ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .ghost:hover { color: var(--text); }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  .tagline { color: var(--muted); font-size: 13px; margin-bottom: 20px; max-width: 900px; margin-left: auto; margin-right: auto; }
+  .summary-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 18px; }
+  .summary-card h2 { color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-size: 12px; margin-bottom: 10px; }
+  .headline { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .stat { padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+  .stat.action { background: var(--action-bg); color: var(--action); }
+  .stat.fyi { background: var(--fyi-bg); color: var(--fyi); }
+  .stat.noise { background: var(--noise-bg); color: var(--noise); }
+  .card { background: var(--card); border: 1px solid var(--border); border-left: 5px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
+  .card.NEEDS-ACTION { border-left-color: var(--action); }
+  .card.FYI { border-left-color: var(--fyi); }
+  .card.NOISE { border-left-color: var(--noise); opacity: .75; }
+  .card.done { opacity: .55; }
+  .card.done .subject { text-decoration: line-through; }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .from { font-weight: 600; }
+  .badge { font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .badge.NEEDS-ACTION { background: var(--action-bg); color: var(--action); }
+  .badge.FYI { background: var(--fyi-bg); color: var(--fyi); }
+  .badge.NOISE { background: var(--noise-bg); color: var(--noise); }
+  .badge.done { background: var(--ok-bg); color: var(--ok); }
+  .subject { font-size: 15px; margin: 6px 0 4px; font-weight: 600; }
+  .body-snippet { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+  .next-step { font-size: 13px; background: var(--bg); border-radius: 8px; padding: 8px 12px; display: inline-block; margin-right: 10px; }
+  .next-step strong { color: var(--accent); }
+  .approve { background: var(--ok); color: #fff; font-weight: 600; font-size: 13px; padding: 8px 14px; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+  .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 20px 0 10px; font-weight: 700; }
+  .handover { background: var(--card); border: 1px dashed var(--border); border-radius: 10px; padding: 12px 16px; margin-top: 20px; color: var(--muted); font-size: 13px; }
+  .progress { font-size: 13px; font-weight: 600; color: var(--ok); }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>Smart Inbox Triage <span>— morning summary</span></h1>
+    <div>
+      <button class="ghost" id="darkToggle">🌙 Dark mode</button>
+      <button class="primary" id="triageBtn">Generate morning summary</button>
+    </div>
+  </div>
+  <div class="tagline">AI sorts the inbox — you just read the action items and approve. Nothing else to do.</div>
+
+  <div class="wrap">
+    <div id="summary" class="summary-card" style="display:none"></div>
+    <div id="results"></div>
+    <div class="empty" id="empty">Click <b>Generate morning summary</b> — the sample inbox loads automatically. To use your own emails, paste them as JSON below first.</div>
+    <details style="margin-top:24px">
+      <summary style="cursor:pointer;color:var(--muted)">Paste your own emails (JSON)</summary>
+      <textarea id="pasteBox" rows="8" style="width:100%;margin-top:10px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:monospace;font-size:12px"
+        placeholder='[{"from":"Boss (Manager)","subject":"Approve X","body":"Please approve by EOD","cc":[]}]'></textarea>
+    </details>
+    <div class="handover" id="handover">🤝 <b>Handover note:</b> if you're out of office, anyone opening this page sees the same summary. Approving an item marks it done — the record of what was approved and when is kept in <code>data/approvals.json</code>.</div>
+  </div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+let data = null;
+
+document.getElementById('darkToggle').onclick = (e) => {
+  document.body.classList.toggle('dark');
+  e.target.textContent = document.body.classList.contains('dark') ? '☀️ Light mode' : '🌙 Dark mode';
+};
+
+function bucketLabel(b) { return b; }
+
+function approve(id) {
+  const e = data.emails.find((x) => x.id === id);
+  if (e) { e.done = true; fetch('/api/approve', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: e.id, from: e.from, subject: e.subject, nextStep: e.nextStep }) }); render(); }
+}
+function approveAll() {
+  data.emails.forEach((e) => { if (e.bucket === 'NEEDS ACTION' && !e.done) approve(e.id); });
+}
+
+function render() {
+  const s = data.summary;
+  const actionItems = data.emails.filter((e) => e.bucket === 'NEEDS ACTION');
+  const doneCount = actionItems.filter((e) => e.done).length;
+  const remaining = actionItems.length - doneCount;
+
+  $('#summary').style.display = '';
+  $('#summary').innerHTML = `
+    <h2>Morning Summary — ${new Date().toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' })}</h2>
+    <div class="headline">${remaining === 0 && actionItems.length > 0 ? 'All action items approved. ✅' : s.headline}</div>
+    <div class="stats">
+      <div class="stat action">⚡ ${s.needsAction} need action</div>
+      <div class="stat fyi">📖 ${s.fyi} FYI</div>
+      <div class="stat noise">🗑️ ${s.noise} noise</div>
+      ${actionItems.length ? `<span class="progress">${doneCount}/${actionItems.length} approved${remaining ? ` · ${remaining} left` : ''}</span>
+        ${remaining ? '<button class="approve" onclick="approveAll()">Approve all remaining</button>' : ''}` : ''}
+    </div>`;
+
+  const order = { 'NEEDS ACTION': 0, FYI: 1, NOISE: 2 };
+  const sorted = [...data.emails].sort((a, b) => order[a.bucket] - order[b.bucket] || b.score - a.score);
+  let lastBucket = null;
+  $('#results').innerHTML = sorted.map((e) => {
+    const key = e.bucket.replace(' ', '-');
+    let label = '';
+    if (e.bucket !== lastBucket) {
+      label = `<div class="section-label">${bucketLabel(e.bucket)}</div>`;
+      lastBucket = e.bucket;
+    }
+    const badge = e.done ? '<div class="badge done">✅ APPROVED</div>' : `<div class="badge ${key}">${bucketLabel(e.bucket)}</div>`;
+    const approveBtn = e.bucket === 'NEEDS ACTION' && !e.done
+      ? `<button class="approve" onclick="approve(${e.id})">Approve &amp; done</button>` : '';
+    return `${label}
+      <div class="card ${key} ${e.done ? 'done' : ''}">
+        <div class="card-head"><div class="from">${e.from}</div>${badge}</div>
+        <div class="subject">${e.subject}</div>
+        <div class="body-snippet">${(e.body || '').slice(0, 180)}</div>
+        <div><span class="next-step"><strong>Next step:</strong> ${e.nextStep}</span> ${approveBtn}</div>
+      </div>`;
+  }).join('');
+}
+
+async function triage(list) {
+  const res = await fetch('/api/triage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ emails: list }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error);
+  data = await res.json();
+  render();
+}
+
+$('#triageBtn').onclick = async () => {
+  try {
+    const pasted = $('#pasteBox').value.trim();
+    if (pasted) return triage(JSON.parse(pasted));
+    const res = await fetch('/api/sample');
+    triage(await res.json());
+  } catch (err) {
+    alert('Could not triage: ' + err.message);
+  }
+};
+</script>
+</body>
+</html>

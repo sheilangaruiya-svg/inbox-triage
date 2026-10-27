@@ -1,0 +1,12 @@
+{
+  "name": "inbox-triage",
+  "version": "1.0.0",
+  "description": "Week 1 Project 2 — Smart Inbox Triage: a lightweight morning summary of only the emails that need your action.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/triage.test.js"
+  },
+  "dependencies": {},
+  "license": "MIT"
+}
