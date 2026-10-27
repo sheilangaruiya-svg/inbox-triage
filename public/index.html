@@ -79,6 +79,7 @@
   .toast{position:fixed;right:22px;bottom:22px;background:#0f172a;color:#fff;padding:13px 18px;border-radius:10px;font-size:13.5px;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none;max-width:340px}
   .toast.show{opacity:1;transform:none}
   .hidden{display:none!important}
+  .on-day{background:linear-gradient(135deg,var(--accent),var(--accent2))!important;color:#fff!important;border-color:transparent!important;font-weight:700}
 </style>
 </head>
 <body>
@@ -159,6 +160,8 @@
       <div class="field" style="gap:6px">
         <span class="muted" style="align-self:center;min-width:64px">Days</span>
         <span id="dayPicker" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+        <button class="btn btn-ghost" id="presetWeekdays" style="padding:6px 10px;font-size:12.5px">Mon–Fri</button>
+        <button class="btn btn-ghost" id="presetAll" style="padding:6px 10px;font-size:12.5px">All days</button>
       </div>
       <div class="field">
         <button class="btn btn-primary" id="saveSchedBtn">Save schedule</button>
@@ -376,12 +379,24 @@ function initScheduleUI(){
   if($('#sidefoot')) $('#sidefoot').innerHTML = scheduleLabel()+'<br>Built for Hermessi.';
   $('#schedTz').innerHTML=ZONES.map(z=>`<option value="${z}">${z.replace(/_/g,' ')}</option>`).join('');
   $('#dayPicker').innerHTML=DAYS.map(([l,v])=>`<button class="btn btn-ghost" data-day="${v}" style="padding:6px 10px;font-size:12.5px">${l}</button>`).join('');
-  $('#dayPicker').querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>b.classList.toggle('on-day'));
+  const setDays=(list)=>{ $('#dayPicker').querySelectorAll('[data-day]').forEach(b=>b.classList.toggle('on-day', list.includes(Number(b.dataset.day)))); };
+  $('#dayPicker').querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>{ b.classList.toggle('on-day'); refreshSchedPreview(); });
+  $('#presetWeekdays').onclick=()=>{ setDays([1,2,3,4,5]); refreshSchedPreview(); };
+  $('#presetAll').onclick=()=>{ setDays([0,1,2,3,4,5,6]); refreshSchedPreview(); };
   const s=settings.schedule||{time:'07:00',days:[1,2,3,4,5,6,0],timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'America/New_York'};
   $('#schedTime').value=s.time||'07:00';
+  $('#schedTime').onchange=refreshSchedPreview;
+  $('#schedTz').onchange=refreshSchedPreview;
   if(ZONES.includes(s.timezone)) $('#schedTz').value=s.timezone;
   ($('#dayPicker').querySelectorAll('[data-day]')).forEach(b=>b.classList.toggle('on-day',(s.days||[0,1,2,3,4,5,6]).includes(Number(b.dataset.day))));
-  $('#schedState').textContent=s.applied? `Active: ${s.time} · ${(s.days||[]).length===7?'every day':(s.days||[]).length+' days/week'} · ${s.timezone}` : 'Using default: 7:00 AM ET daily.';
+  $('#schedState').textContent=s.applied? `Active: ${s.time} · ${(s.days||[]).length===7?'every day':(s.days||[]).length+' days/week'} · ${s.timezone}` : 'Using default: 7:00 AM New York, daily.';
+  refreshSchedPreview();
+}
+function refreshSchedPreview(){
+  const days=[...$('#dayPicker').querySelectorAll('.on-day')].map(b=>Number(b.dataset.day)).sort();
+  const names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  $('#schedState').textContent = days.length===0 ? 'Pick at least one day.'
+    : `Selected: ${days.map(d=>names[d]).join(', ')} at ${$('#schedTime').value||'07:00'} ${($('#schedTz').value||'').split('/').pop().replace(/_/g,' ')}`;
 }
 function currentSchedule(){
   const days=[...$('#dayPicker').querySelectorAll('.on-day')].map(b=>Number(b.dataset.day));
