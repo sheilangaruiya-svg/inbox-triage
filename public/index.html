@@ -64,6 +64,7 @@
   .badge.FYI{background:var(--fyibg);color:var(--fyi)}
   .badge.NOISE{background:var(--noisebg);color:var(--noise)}
   .badge.done{background:var(--okbg);color:var(--ok)}
+  .badge.ai{background:linear-gradient(90deg,#4285f4,#9b72cb);color:#fff;margin-left:6px}
   .subject{font-size:14.5px;font-weight:600;margin:6px 0 4px}
   .snippet{color:var(--muted);font-size:12.5px;line-height:1.5;margin-bottom:9px}
   .next{font-size:12.5px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 11px;display:inline-block}
@@ -200,7 +201,8 @@ $('#darkBtn').onclick=()=>{ document.body.classList.toggle('dark'); localStorage
 // email card
 function card(e){
   const key=e.bucket.replace(' ','-');
-  const badge=e.done?'<span class="badge done">✅ APPROVED</span>':`<span class="badge ${key}">${esc(e.bucket)}</span>`;
+  let badge=e.done?'<span class="badge done">✅ APPROVED</span>':`<span class="badge ${key}">${esc(e.bucket)}</span>`;
+  if(e.ai) badge+='<span class="badge ai" title="Written by Gemini AI">✨ AI</span>';
   const approve=(e.bucket==='NEEDS ACTION'&&!e.done)?`<button class="btn btn-ok" data-approve="${esc(e.id)}">Approve &amp; done</button>`:'';
   const meta = (e.attention==='NEEDS ACTION'||true) && (e.deadline || e.owner) ? `
     <div style="display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12.5px;margin:4px 0 8px">

@@ -157,7 +157,9 @@ def build_text(emails, summary):
         lines.append(f'  \u23F0 Due: {d}' if d != 'No deadline stated' else '  \u23F0 Due: not stated')
         lines.append(f'  \U0001F517 {e["link"]}')
         lines.append('')
-    lines.append(f'_FYI {fyi_n} \u00b7 noise {len(noise)} \u2014 in the app, no action needed_')
+    ai = any(e.get('ai') for e in actions)
+    tag = 'AI-written by Gemini \u00b7 ' if ai else ''
+    lines.append(f'_{tag}FYI {fyi_n} \u00b7 noise {len(noise)} \u2014 in the app, no action needed_')
     return '\n'.join(lines)
 
 

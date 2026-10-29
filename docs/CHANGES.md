@@ -1,5 +1,11 @@
 # CHANGES
 
+## v4.5 — 2026-10-29 (Gemini AI summaries)
+- scripts/gemini.py: Google Gemini writes the context, next step, and deadline for every email that needs action.
+- AI fields land in data/live-inbox.json (e.ai flag) and the delivered digest footer notes "AI-written by Gemini".
+- Graceful fallback: no GEMINI_API_KEY in .env.local, or an API failure, keeps the previous heuristic summaries — the morning sync never breaks.
+- App cards show an ✨ AI badge on Gemini-written items.
+
 ## v1.0 — 2026-10-27
 - First version of Smart Inbox Triage.
 - Rules-based classifier (lib/triage.js): Needs Action / FYI / Noise + next-step suggestions.

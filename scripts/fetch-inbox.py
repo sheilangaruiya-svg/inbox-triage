@@ -75,4 +75,6 @@ data = summarize.run(ROOT / 'data' / 'live-inbox.json')
 data['accounts'] = accounts
 data['pendingAccounts'] = pending
 (ROOT / 'data' / 'live-inbox.json').write_text(json.dumps(data, indent=2))
+import gemini
+gemini.run(ROOT / 'data' / 'live-inbox.json')
 print('wrote data/live-inbox.json + summary')
