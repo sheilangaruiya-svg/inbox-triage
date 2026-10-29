@@ -4,6 +4,7 @@
 - scripts/gemini.py: Google Gemini writes the context, next step, and deadline for every email that needs action.
 - AI fields land in data/live-inbox.json (e.ai flag) and the delivered digest footer notes "AI-written by Gemini".
 - Graceful fallback: no GEMINI_API_KEY in .env.local, or an API failure, keeps the previous heuristic summaries — the morning sync never breaks.
+- Uses gemini-3.5-flash-lite with automatic retry on transient 403s (API enablement/quota), so the sync self-heals.
 - App cards show an ✨ AI badge on Gemini-written items.
 
 ## v1.0 — 2026-10-27

@@ -9,12 +9,12 @@ morning summary always works.
 
 Consumed by fetch-inbox.py after summarize.run().
 """
-import json, os, pathlib, urllib.request, urllib.error
+import json, os, pathlib, time, urllib.request, urllib.error
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 API = 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
-MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash']  # tried in order; first that answers wins
+MODELS = ['gemini-3.5-flash-lite', 'gemini-3.8-flash']  # tried in order; first that answers wins
 
 PROMPT = """You are the executive assistant's summarizer for a CEO inbox digest.
 For the email below, return ONLY valid JSON with exactly these keys:
@@ -44,7 +44,7 @@ def load_env():
 
 
 def ask_gemini(sender, subject, body, api_key, model=None):
-    """One call to Gemini; returns dict or None on any failure."""
+    """One call to Gemini (with retries); returns dict or None on any failure."""
     prompt = PROMPT.format(sender=sender[:80], subject=subject[:200], body=(body or '')[:900])
     payload = {
         'contents': [{'parts': [{'text': prompt}]}],
@@ -54,23 +54,27 @@ def ask_gemini(sender, subject, body, api_key, model=None):
     models = [model] if model else MODELS
     last_err = None
     for m in models:
-        try:
-            req = urllib.request.Request(
-                API.format(model=m) + '?key=' + api_key,
-                data=json.dumps(payload).encode(),
-                headers={'Content-Type': 'application/json'}, method='POST')
-            with urllib.request.urlopen(req, timeout=25) as resp:
-                out = json.loads(resp.read().decode())
-            text = (out.get('candidates') or [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
-            data = json.loads(text)
-            data['context'] = str(data.get('context', '')).strip()
-            data['nextStep'] = str(data.get('nextStep', '')).strip()
-            data['deadline'] = str(data.get('deadline', '') or 'not stated').strip()
-            if not data['context'] or not data['nextStep']:
-                return None
-            return data
-        except (urllib.error.URLError, urllib.error.HTTPError, ValueError, KeyError, json.JSONDecodeError) as e:
-            last_err = e
+        for attempt in range(3):
+            try:
+                req = urllib.request.Request(
+                    API.format(model=m) + '?key=' + api_key,
+                    data=json.dumps(payload).encode(),
+                    headers={'Content-Type': 'application/json'}, method='POST')
+                with urllib.request.urlopen(req, timeout=25) as resp:
+                    out = json.loads(resp.read().decode())
+                text = (out.get('candidates') or [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
+                data = json.loads(text)
+                data['context'] = str(data.get('context', '')).strip()
+                data['nextStep'] = str(data.get('nextStep', '')).strip()
+                data['deadline'] = str(data.get('deadline', '') or 'not stated').strip()
+                if not data['context'] or not data['nextStep']:
+                    return None
+                return data
+            except (urllib.error.URLError, urllib.error.HTTPError, ValueError, KeyError, json.JSONDecodeError) as e:
+                last_err = e
+                # transient "API just enabled / quota" 403s: back off and retry
+                if isinstance(e, urllib.error.HTTPError) and e.code == 403:
+                    time.sleep(3)
     print(f'  [gemini] no model answered ({last_err!r}); keeping heuristic fields')
     return None
 
