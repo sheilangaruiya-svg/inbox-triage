@@ -1,5 +1,11 @@
 # CHANGES
 
+## v4.6 — 2026-10-30 (multi-account inboxes)
+- The sync now scans EVERY connected account that has a token, not just the primary inbox.
+- Each email is tagged with the inbox it came from; the app shows a "📥 <account>" label on cards from other accounts and an "N inboxes" chip on the summary.
+- Accounts without a token show "Pending sign-in" in Gmail accounts with an honest status; the primary keeps using the Hermessi Google connection.
+- Extra accounts take their own token as GMAIL_TOKEN_<EMAIL> in .env.local (e.g. GMAIL_TOKEN_SHEILANGARUIYA4_GMAIL_COM), gitignored — never in the repo.
+
 ## v4.5 — 2026-10-29 (Gemini AI summaries)
 - scripts/gemini.py: Google Gemini writes the context, next step, and deadline for every email that needs action.
 - AI fields land in data/live-inbox.json (e.ai flag) and the delivered digest footer notes "AI-written by Gemini".

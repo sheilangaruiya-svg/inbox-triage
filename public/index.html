@@ -204,10 +204,12 @@ function card(e){
   let badge=e.done?'<span class="badge done">✅ APPROVED</span>':`<span class="badge ${key}">${esc(e.bucket)}</span>`;
   if(e.ai) badge+='<span class="badge ai" title="Written by Gemini AI">✨ AI</span>';
   const approve=(e.bucket==='NEEDS ACTION'&&!e.done)?`<button class="btn btn-ok" data-approve="${esc(e.id)}">Approve &amp; done</button>`:'';
-  const meta = (e.attention==='NEEDS ACTION'||true) && (e.deadline || e.owner) ? `
+  const isOther = e.account && e.account!==(settings.accounts&&settings.accounts[0]&&settings.accounts[0].email);
+  const meta = (e.attention==='NEEDS ACTION'||true) && (e.deadline || e.owner || isOther) ? `
     <div style="display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12.5px;margin:4px 0 8px">
       ${e.attention?`<span><b style="color:var(--accent)">${esc(e.attention.toUpperCase())}</b></span>`:''}
       ${e.owner?`<span>👤 ${esc(e.owner)}</span>`:''}
+      ${isOther?`<span>📥 ${esc(e.account)}</span>`:''}
       ${e.deadline?`<span>⏰ ${esc(e.deadline)}</span>`:''}
       ${e.link?`<span><a href="${esc(e.link)}" target="_blank" rel="noopener" style="color:var(--accent)">Open email ↗</a></span>`:''}
     </div>` : '';
@@ -230,9 +232,11 @@ function render(){
   $('#headline').textContent = actions.length===0 ? 'Nothing needs your action this morning. ☀️'
     : (done===actions.length ? 'All action items approved. ✅'
     : `${actions.length-done} email${actions.length-done===1?'':'s'} need your action.`);
+  const nAccts=(data.syncedAccounts||[]).length;
   $('#chips').innerHTML=`<span class="chip action">⚡ ${s.needsAction} need action</span>
     <span class="chip fyi">📖 ${s.fyi} FYI</span>
     <span class="chip noise">🗑️ ${s.noise} noise</span>
+    ${nAccts>1?`<span class="chip">📥 ${nAccts} inboxes</span>`:''}
     ${actions.length?`<span class="prog">${done}/${actions.length} approved</span>`:''}`;
   const open=data.emails.filter(e=>e.bucket==='NEEDS ACTION');
   $('#actionList').innerHTML = open.length
@@ -297,13 +301,19 @@ async function loadSettings(){
   }catch(_){}
   $('#webhook').value=settings.slackWebhook||'';
   $('#webhookState').textContent=settings.slackWebhook?'✅ A Slack webhook is saved.':'No webhook saved yet.';
-  $('#accountList').innerHTML=(settings.accounts||[]).map(a=>
-    `<div class="acct"><span><span class="dot ${a.connected?'':'pending'}"></span>${esc(a.email)}</span>
+  $('#accountList').innerHTML=(settings.accounts||[]).map(a=>{
+    const synced=(live.syncedAccounts||[]).includes(a.email);
+    const pending=(live.pendingAccounts||[]).includes(a.email);
+    let state='Awaiting one-time sign-in';
+    if(synced) state='Synced ✓ (scanned this run)';
+    else if(pending) state='Pending sign-in — add its Gmail token';
+    else if(a.connected) state=a.via==='forwarding'?'Connected · forwarded here':'Connected';
+    return `<div class="acct"><span><span class="dot ${synced?'':(a.connected?'pending':'')}"></span>${esc(a.email)}</span>
      <span style="display:flex;gap:8px;align-items:center">
-       <span class="muted">${a.connected?(a.via==='forwarding'?'Connected · forwarded here':'Connected · synced daily'):'Awaiting one-time sign-in'}</span>
+       <span class="muted">${state}</span>
        ${a.connected?`<button class="btn btn-ghost" data-syncacct="${esc(a.email)}" style="padding:6px 11px">↻ Sync</button>`:''}
-     </span></div>`).join('')
-    ||'<div class="muted">No accounts yet.</div>';
+     </span></div>`;
+  }).join('')||'<div class="muted">No accounts yet.</div>';
   document.querySelectorAll('[data-syncacct]').forEach(b=>b.onclick=()=>requestSync(b.dataset.syncacct));
 }
 
